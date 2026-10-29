@@ -1,0 +1,163 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Product API",
+    "version": "1.0.0",
+    "description": "A small REST API for managing products. Products are kept in memory and reset when the server restarts."
+  },
+  "paths": {
+    "/products": {
+      "get": {
+        "summary": "List active products",
+        "description": "Returns all products that are not archived.",
+        "responses": {
+          "200": {
+            "description": "List of active products",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Product" } }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a product",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/ProductInput" } }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Product created",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Product" } }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" }
+        }
+      }
+    },
+    "/products/{id}": {
+      "parameters": [{ "$ref": "#/components/parameters/ProductId" }],
+      "get": {
+        "summary": "Get a product by ID",
+        "responses": {
+          "200": {
+            "description": "The product",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Product" } }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "put": {
+        "summary": "Replace a product's name and price",
+        "description": "An unknown ID returns 404 before the body is validated.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/ProductInput" } }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated product",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Product" } }
+            }
+          },
+          "400": { "$ref": "#/components/responses/ValidationError" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      },
+      "delete": {
+        "summary": "Delete a product",
+        "responses": {
+          "204": { "description": "Product deleted, no content" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/products/{id}/archive": {
+      "parameters": [{ "$ref": "#/components/parameters/ProductId" }],
+      "patch": {
+        "summary": "Archive a product",
+        "description": "Marks the product as archived so it no longer appears in GET /products.",
+        "responses": {
+          "200": {
+            "description": "The archived product",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Product" } }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "ProductId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "Product ID",
+        "schema": { "type": "integer", "example": 1 }
+      }
+    },
+    "schemas": {
+      "Product": {
+        "type": "object",
+        "required": ["id", "name", "price"],
+        "properties": {
+          "id": { "type": "integer", "example": 1 },
+          "name": { "type": "string", "example": "Laptop" },
+          "price": { "type": "number", "example": 999.99 },
+          "archived": { "type": "boolean", "example": true }
+        }
+      },
+      "ProductInput": {
+        "type": "object",
+        "required": ["name", "price"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "description": "Non-empty string", "example": "Mouse" },
+          "price": { "type": "number", "exclusiveMinimum": true, "minimum": 0, "description": "Positive number", "example": 25.5 }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": { "type": "string" }
+        }
+      }
+    },
+    "responses": {
+      "ValidationError": {
+        "description": "Invalid input",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" },
+            "examples": {
+              "name": { "value": { "error": "Name must be a non-empty string" } },
+              "price": { "value": { "error": "Price must be a positive number" } }
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "Product not found",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" },
+            "example": { "error": "Product not found" }
+          }
+        }
+      }
+    }
+  }
+}
